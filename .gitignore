@@ -1,5 +1,5 @@
-.venv/
+service/.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
-data/
+service/data/

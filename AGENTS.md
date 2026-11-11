@@ -10,18 +10,18 @@ for customers. It is the **provider** of the `customer-api` contract (`../../con
 ## Layout (layered – keep dependencies pointing inwards)
 | Layer | Path | Responsibility |
 |-------|------|----------------|
-| API | `app/api/` | Routing, request/response schemas, HTTP error mapping, auth dependency |
-| Service | `app/services/` | Business workflows (register, login, view details) |
-| Domain | `app/domain/` | Entities, business rules (password policy, normalization), domain errors |
-| Persistence | `app/db/` | SQLite repository |
-| Core | `app/core/` | Settings, password hashing, JWT tokens |
+| API | `service` | Routing, request/response schemas, HTTP error mapping, auth dependency |
+| Service | `service` | Business workflows (register, login, view details) |
+| Domain | `service` | Entities, business rules (password policy, normalization), domain errors |
+| Persistence | `service` | SQLite repository |
+| Core | `service` | Settings, password hashing, JWT tokens |
 
 ## Rules
 1. Never return `password` / `password_hash` in any response.
 2. Any change to a route, status code or response field **must** be reflected in the shared contract and
    called out in your task summary so the integration reviewer can notify consumers.
-3. Business rules live in `app/domain` / `app/services`, never in routers.
-4. Every behaviour change needs a test in `tests/`.
+3. Business rules live in `service` / `service`, never in routers.
+4. Every behaviour change needs a test in `service`.
 5. Use Python 3.9 compatible typing (`Optional[...]`, not `X | None`).
 
 ## Commands

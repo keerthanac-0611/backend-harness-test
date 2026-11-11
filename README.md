@@ -24,7 +24,7 @@ Password policy: 8–128 chars, at least one uppercase, one lowercase and one di
 ## Configuration (env vars)
 | Variable | Default |
 |----------|---------|
-| `CUSTOMER_DB_PATH` | `data/customers.db` |
+| `CUSTOMER_DB_PATH` | `service` |
 | `CUSTOMER_SECRET_KEY` | `dev-insecure-secret-change-me` (**override in production**) |
 | `CUSTOMER_TOKEN_TTL_MINUTES` | `60` |
 | `CUSTOMER_CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` |
