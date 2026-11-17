@@ -94,3 +94,97 @@ def test_cannot_view_other_customer(client):
     token = login(client).json()["access_token"]
     res = client.get(f"/api/customers/{other_id}", headers={"Authorization": f"Bearer {token}"})
     assert res.status_code == 403
+
+
+SUMMARY_KEYS = {"id", "first_name", "last_name"}
+
+
+def seed_names(client):
+    names = [("Ana", "Smith"), ("Daniel", "Lee"), ("Bob", "Anders")]
+    return [
+        register(client, email=f"user{i}@example.com", first_name=f, last_name=l).json()["id"]
+        for i, (f, l) in enumerate(names)
+    ]
+
+
+def test_list_customers_empty_db_returns_empty_array(client):
+    res = client.get("/api/customers")
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+def test_list_customers_is_public_ordered_and_allowlisted(client):
+    ids = seed_names(client)
+    res = client.get("/api/customers")  # no Authorization header
+    assert res.status_code == 200
+    body = res.json()
+    assert [c["id"] for c in body] == sorted(ids)
+    assert all(set(c) == SUMMARY_KEYS for c in body)
+    text = res.text
+    for secret in ("email", "phone", "address", "password", "created_at", "example.com"):
+        assert secret not in text
+
+
+def test_search_requires_name_param(client):
+    assert client.get("/api/customers/search").status_code == 422
+
+
+def test_search_is_public_and_allowlisted(client):
+    seed_names(client)
+    res = client.get("/api/customers/search", params={"name": "ana"})
+    assert res.status_code == 200
+    assert all(set(c) == SUMMARY_KEYS for c in res.json())
+
+
+def test_search_partial_case_insensitive_ordered(client):
+    ids = seed_names(client)
+    res = client.get("/api/customers/search", params={"name": "AN"})
+    # "an" appears in all three names (Ana, Daniel, Anders); ids stay ordered.
+    assert [c["id"] for c in res.json()] == ids
+    res = client.get("/api/customers/search", params={"name": "ND"})
+    assert [c["id"] for c in res.json()] == [ids[2]]
+
+
+def test_search_matches_full_name_across_first_and_last(client):
+    ids = seed_names(client)
+    res = client.get("/api/customers/search", params={"name": "ana smi"})
+    assert [c["id"] for c in res.json()] == [ids[0]]
+
+
+def test_search_trims_query(client):
+    ids = seed_names(client)
+    res = client.get("/api/customers/search", params={"name": "  daniel  "})
+    assert [c["id"] for c in res.json()] == [ids[1]]
+
+
+def test_search_no_match_returns_empty_array(client):
+    seed_names(client)
+    res = client.get("/api/customers/search", params={"name": "zzz"})
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+@pytest.mark.parametrize("name", ["", "   "])
+def test_search_blank_returns_empty_array(client, name):
+    seed_names(client)
+    res = client.get("/api/customers/search", params={"name": name})
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+def test_literal_routes_not_shadowed_by_customer_id(client):
+    seed_names(client)
+    assert client.get("/api/customers/search", params={"name": "a"}).status_code == 200
+    assert client.get("/api/customers").status_code == 200
+    # Numeric ids still route to the authenticated detail endpoint.
+    assert client.get("/api/customers/1").status_code == 401
+
+
+def test_existing_auth_unchanged_alongside_public_endpoints(client):
+    register(client)
+    assert client.get("/api/customers").status_code == 200
+    assert client.get("/api/customers/me").status_code == 401
+    token = login(client).json()["access_token"]
+    me = client.get("/api/customers/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.status_code == 200
+    assert "email" in me.json()

@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import get_current_customer, get_customer_service
 from app.api.schemas import (
     CustomerResponse,
+    CustomerSummaryResponse,
     ErrorResponse,
     LoginRequest,
     RegistrationRequest,
@@ -30,6 +33,12 @@ def to_response(customer: Customer) -> CustomerResponse:
         phone=customer.phone,
         address=customer.address,
         created_at=customer.created_at,
+    )
+
+
+def to_summary(customer: Customer) -> CustomerSummaryResponse:
+    return CustomerSummaryResponse(
+        id=customer.id, first_name=customer.first_name, last_name=customer.last_name
     )
 
 
@@ -63,6 +72,18 @@ def login(payload: LoginRequest, service: CustomerService = Depends(get_customer
 @customer_router.get("/me", response_model=CustomerResponse, responses={401: {"model": ErrorResponse}})
 def get_my_details(current: Customer = Depends(get_current_customer)) -> CustomerResponse:
     return to_response(current)
+
+
+@customer_router.get("", response_model=List[CustomerSummaryResponse])
+def list_customers(service: CustomerService = Depends(get_customer_service)) -> List[CustomerSummaryResponse]:
+    return [to_summary(customer) for customer in service.list_customers()]
+
+
+@customer_router.get("/search", response_model=List[CustomerSummaryResponse])
+def search_customers(
+    name: str = Query(...), service: CustomerService = Depends(get_customer_service)
+) -> List[CustomerSummaryResponse]:
+    return [to_summary(customer) for customer in service.search_customers(name)]
 
 
 @customer_router.get(
