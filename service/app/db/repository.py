@@ -2,7 +2,7 @@ import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 
 from app.domain.errors import EmailAlreadyRegisteredError
 from app.domain.models import Customer
@@ -55,6 +55,11 @@ class CustomerRepository:
         with self._connect() as conn:
             row = conn.execute("SELECT * FROM customers WHERE id = ?", (customer_id,)).fetchone()
         return self._to_customer(row)
+
+    def list_all(self) -> List[Customer]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT * FROM customers ORDER BY id ASC").fetchall()
+        return [Customer(**dict(row)) for row in rows]
 
     def create(
         self,

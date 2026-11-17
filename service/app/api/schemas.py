@@ -50,6 +50,12 @@ class CustomerResponse(BaseModel):
     created_at: str
 
 
+class CustomerSummaryResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

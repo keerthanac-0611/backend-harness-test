@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from app.core import security
 from app.core.config import Settings
@@ -68,3 +68,16 @@ class CustomerService:
         if customer is None:
             raise CustomerNotFoundError(customer_id)
         return customer
+
+    def list_customers(self) -> List[Customer]:
+        return self._repository.list_all()
+
+    def search_customers(self, name: str) -> List[Customer]:
+        query = name.strip().lower()
+        if not query:
+            return []
+        return [
+            customer
+            for customer in self._repository.list_all()
+            if query in f"{customer.first_name} {customer.last_name}".lower()
+        ]
